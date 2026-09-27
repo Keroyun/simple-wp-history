@@ -3,7 +3,7 @@
  * Plugin Name: Simple WP History
  * Plugin URI: https://khairulazhar.com/my-plugins-and-tools/
  * Description: Lightweight WordPress activity history and audit log with dashboard summary, filters, CSV export, retention controls, safe admin click tracking, and security hardening.
- * Version: 1.0
+ * Version: 1.0.1
  * Requires at least: 5.8
  * Tested up to: 6.1.1
  * Requires PHP: 7.4
@@ -25,7 +25,7 @@ require_once __DIR__ . '/includes/trait-admin-ui.php';
 
 final class SWH_Simple_WP_History {
 
-	const VERSION    = '1.0';
+	const VERSION    = '1.0.1';
 	const DB_VERSION = '1.0';
 
 	private static $instance = null;
