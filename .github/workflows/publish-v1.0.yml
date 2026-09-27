@@ -1,0 +1,47 @@
+name: Publish Simple WP History 1.0
+
+on:
+  push:
+    paths:
+      - 'release-v1.0.trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event.head_commit.message == 'Publish Simple WP History 1.0'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build plugin ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build
+          mkdir -p build/simple-wp-history
+          rsync -av \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='build' \
+            --exclude='release-v1.0.trigger' \
+            --exclude='*.zip' \
+            ./ build/simple-wp-history/
+          cd build
+          zip -r ../simple-wp-history-1.0.zip simple-wp-history
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create v1.0 simple-wp-history-1.0.zip \
+            --target main \
+            --title "Simple WP History 1.0" \
+            --notes "Initial public release of Simple WP History.
+
+          A lightweight WordPress activity and audit log with dashboard summaries, filtering, CSV export, retention controls, privacy-focused IP handling, WooCommerce activity logging, hardened admin tracking, and native WordPress update notifications through GitHub Releases.
+
+          Compatible with WordPress 5.8+ and designed to support WordPress 6.1.1."
