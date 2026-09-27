@@ -18,3 +18,4 @@ Initial public release.
 - Content metadata change tracking
 - WooCommerce activity support
 - Security hardening including capability checks, nonces, sanitisation, escaping, prepared queries, rate limiting, duplicate suppression, and CSV formula-injection protection
+- Native WordPress update notifications sourced from GitHub Releases
