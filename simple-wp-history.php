@@ -20,7 +20,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/includes/trait-core.php';
 require_once __DIR__ . '/includes/trait-events.php';
 require_once __DIR__ . '/includes/trait-tracker-updater.php';
-require_once __DIR__ . '/includes/trait-admin.php';
+require_once __DIR__ . '/includes/trait-admin-data.php';
+require_once __DIR__ . '/includes/trait-admin-ui.php';
 
 final class SWH_Simple_WP_History {
 
@@ -31,7 +32,7 @@ final class SWH_Simple_WP_History {
 	private $pre_update_posts = array();
 	private $table_exists_cache = null;
 
-	use SWH_Core_Trait, SWH_Events_Trait, SWH_Tracker_Updater_Trait, SWH_Admin_Trait;
+	use SWH_Core_Trait, SWH_Events_Trait, SWH_Tracker_Updater_Trait, SWH_Admin_Data_Trait, SWH_Admin_UI_Trait;
 
 	public static function instance() {
 		if ( null === self::$instance ) {
