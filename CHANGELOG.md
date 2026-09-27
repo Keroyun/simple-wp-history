@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1
+
+Maintenance release to verify the GitHub-to-WordPress update flow.
+
+### Changed
+
+- Refined admin interface wording
+- No database schema changes
+- No settings reset
+
 ## 1.0
 
 Initial public release.
