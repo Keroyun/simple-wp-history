@@ -25,6 +25,7 @@ Simple WP History records meaningful WordPress admin activity without capturing 
 - Full, masked, or disabled IP storage
 - IP column hidden by default
 - Admin click rate limiting and duplicate suppression
+- Native WordPress update notifications through GitHub Releases
 
 ## Security and privacy
 
@@ -95,3 +96,7 @@ https://khairulazhar.com/
 ## License
 
 GPL-2.0-or-later
+
+## Updates
+
+Installed copies can check the latest public GitHub Release and surface newer versions in WordPress' normal **Plugins** update UI. Release ZIP assets are preferred; GitHub's source archive is used as a fallback.
