@@ -112,7 +112,7 @@ trait SWH_Admin_UI_Trait {
 
 		<div class="swh-dash-footer">
 			<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=simple-wp-history' ) ); ?>">View Full History</a>
-			<span style="color:#646970;font-size:11px;">Latest 8 activities</span>
+			<span style="color:#646970;font-size:11px;">Latest 8 recorded activities</span>
 		</div>
 		<?php
 	}
@@ -179,7 +179,7 @@ trait SWH_Admin_UI_Trait {
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html__( 'Simple WP History', 'simple-wp-history' ); ?></h1>
-			<p><?php echo esc_html__( 'A lightweight audit trail of meaningful WordPress administrative activity.', 'simple-wp-history' ); ?></p>
+			<p><?php echo esc_html__( 'A lightweight audit trail of meaningful WordPress activity, with privacy-focused logging.', 'simple-wp-history' ); ?></p>
 
 			<style>
 				.swh-settings{background:#fff;border:1px solid #dcdcde;padding:16px;margin:16px 0;max-width:980px}
