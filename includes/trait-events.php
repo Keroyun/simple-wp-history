@@ -55,9 +55,13 @@ trait SWH_Events_Trait {
 		}
 
 		$this->pre_update_posts[ $post_id ] = array(
-			'title'  => $this->limit_text( $post->post_title, 190 ),
-			'slug'   => $this->limit_text( $post->post_name, 190 ),
-			'status' => $this->limit_text( $post->post_status, 40 ),
+			'title'    => $this->limit_text( $post->post_title, 190 ),
+			'slug'     => $this->limit_text( $post->post_name, 190 ),
+			'status'   => $this->limit_text( $post->post_status, 40 ),
+			'author'   => (int) $post->post_author,
+			'parent'   => (int) $post->post_parent,
+			'date'     => $this->limit_text( $post->post_date, 40 ),
+			'template' => $this->limit_text( get_post_meta( $post_id, '_wp_page_template', true ), 190 ),
 		);
 	}
 
@@ -95,6 +99,31 @@ trait SWH_Events_Trait {
 				$changed[] = 'status';
 				$details['old_status'] = $old['status'];
 				$details['new_status'] = $this->limit_text( $post->post_status, 40 );
+			}
+
+			if ( (int) $old['author'] !== (int) $post->post_author ) {
+				$changed[] = 'author';
+				$details['old_author_id'] = (int) $old['author'];
+				$details['new_author_id'] = (int) $post->post_author;
+			}
+
+			if ( (int) $old['parent'] !== (int) $post->post_parent ) {
+				$changed[] = 'parent';
+				$details['old_parent_id'] = (int) $old['parent'];
+				$details['new_parent_id'] = (int) $post->post_parent;
+			}
+
+			if ( $old['date'] !== $post->post_date ) {
+				$changed[] = 'publish_date';
+				$details['old_publish_date'] = $old['date'];
+				$details['new_publish_date'] = $this->limit_text( $post->post_date, 40 );
+			}
+
+			$new_template = $this->limit_text( get_post_meta( $post_id, '_wp_page_template', true ), 190 );
+			if ( $old['template'] !== $new_template ) {
+				$changed[] = 'template';
+				$details['old_template'] = $old['template'];
+				$details['new_template'] = $new_template;
 			}
 
 			if ( ! empty( $changed ) ) {
@@ -230,8 +259,8 @@ trait SWH_Events_Trait {
 		}
 
 		$this->log_event(
-			'user_updated',
-			'User profile updated',
+			( $old_roles !== $new_roles ) ? 'user_role_changed' : 'user_updated',
+			( $old_roles !== $new_roles ) ? 'User role changed' : 'User profile updated',
 			array(
 				'object_type'  => 'user',
 				'object_id'    => $user_id,
@@ -389,11 +418,13 @@ trait SWH_Events_Trait {
 			return;
 		}
 
+		$is_woo = 0 === strpos( strtolower( (string) $option ), 'woocommerce_' );
+
 		$this->log_event(
-			'option_updated',
-			'WordPress setting updated',
+			$is_woo ? 'woocommerce_setting_updated' : 'option_updated',
+			$is_woo ? 'WooCommerce setting updated' : 'WordPress setting updated',
 			array(
-				'object_type'  => 'option',
+				'object_type'  => $is_woo ? 'woocommerce_option' : 'option',
 				'object_title' => $option,
 			)
 		);
