@@ -30,9 +30,24 @@ trait SWH_Admin_Data_Trait {
 
 		$track_admin_clicks = isset( $_POST['swh_track_admin_clicks'] ) ? 1 : 0;
 
+		$excluded_users = isset( $_POST['swh_excluded_users'] ) && is_array( $_POST['swh_excluded_users'] )
+			? array_values( array_unique( array_filter( array_map( 'absint', wp_unslash( $_POST['swh_excluded_users'] ) ) ) ) )
+			: array();
+
+		$excluded_roles = isset( $_POST['swh_excluded_roles'] ) && is_array( $_POST['swh_excluded_roles'] )
+			? array_values( array_unique( array_map( 'sanitize_key', wp_unslash( $_POST['swh_excluded_roles'] ) ) ) )
+			: array();
+
+		$excluded_events = isset( $_POST['swh_excluded_events'] ) && is_array( $_POST['swh_excluded_events'] )
+			? array_values( array_intersect( array_map( 'sanitize_key', wp_unslash( $_POST['swh_excluded_events'] ) ), $this->all_known_action_keys() ) )
+			: array();
+
 		update_option( 'swh_retention_days', $retention, false );
 		update_option( 'swh_ip_mode', $ip_mode, false );
 		update_option( 'swh_track_admin_clicks', $track_admin_clicks, false );
+		update_option( 'swh_excluded_users', $excluded_users, false );
+		update_option( 'swh_excluded_roles', $excluded_roles, false );
+		update_option( 'swh_excluded_events', $excluded_events, false );
 
 		wp_safe_redirect(
 			add_query_arg(
@@ -124,6 +139,7 @@ trait SWH_Admin_Data_Trait {
 			'search'     => isset( $_GET['s'] ) ? $this->limit_text( wp_unslash( $_GET['s'] ), 190 ) : '',
 			'date_from'  => isset( $_GET['date_from'] ) ? $this->valid_date( wp_unslash( $_GET['date_from'] ) ) : '',
 			'date_to'    => isset( $_GET['date_to'] ) ? $this->valid_date( wp_unslash( $_GET['date_to'] ) ) : '',
+			'important'    => isset( $_GET['important'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['important'] ) ) ? '1' : '',
 		);
 	}
 
@@ -136,6 +152,15 @@ trait SWH_Admin_Data_Trait {
 		if ( ! empty( $filters['action_key'] ) ) {
 			$where[] = 'action_key = %s';
 			$args[]  = $filters['action_key'];
+		}
+
+		if ( ! empty( $filters['important'] ) ) {
+			$important = $this->important_action_keys();
+			$placeholders = implode( ',', array_fill( 0, count( $important ), '%s' ) );
+			$where[] = "action_key IN ({$placeholders})";
+			foreach ( $important as $action ) {
+				$args[] = $action;
+			}
 		}
 
 		if ( ! empty( $filters['category'] ) ) {
