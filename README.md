@@ -26,6 +26,13 @@ Simple WP History records meaningful WordPress admin activity without capturing 
 - IP column hidden by default
 - Admin click rate limiting and duplicate suppression
 - Native WordPress update notifications through GitHub Releases
+- Expanded WooCommerce audit events
+- JSON export
+- Database health information and manual cleanup
+- User, role, and event exclusions
+- Per-user activity summaries
+- Important Events view for high-impact activity
+- Login security summaries for recent failed-login patterns
 
 ## Security and privacy
 
