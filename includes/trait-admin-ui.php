@@ -345,7 +345,12 @@ trait SWH_Admin_UI_Trait {
 					</div>
 					<div>
 						<label for="swh_username">User</label>
-						<input id="swh_username" type="text" name="username" value="<?php echo esc_attr( $filters['username'] ); ?>" placeholder="Username">
+						<select id="swh_username" name="username">
+							<option value="">All users</option>
+							<?php foreach ( $all_users as $u ) : ?>
+								<option value="<?php echo esc_attr( $u->user_login ); ?>" <?php selected( $filters['username'], $u->user_login ); ?>><?php echo esc_html( $u->user_login ); ?></option>
+							<?php endforeach; ?>
+						</select>
 					</div>
 					<div>
 						<label for="swh_category">Category</label>
