@@ -137,11 +137,26 @@ trait SWH_Advanced_Trait {
 			)
 		);
 
+		$recent_content = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT event_time, action_label, object_type, object_id, object_title FROM {$table}
+				WHERE username = %s AND action_key IN (%s,%s,%s,%s,%s)
+				ORDER BY id DESC LIMIT 5",
+				$username,
+				'content_created',
+				'content_updated',
+				'content_trashed',
+				'content_restored',
+				'content_deleted'
+			)
+		);
+
 		return array(
 			'total'           => $total,
 			'last_action'     => $last_action,
 			'last_login'      => $last_login,
 			'content_changes' => $content_changes,
+			'recent_content'  => $recent_content,
 		);
 	}
 
