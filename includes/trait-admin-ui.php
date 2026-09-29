@@ -218,10 +218,18 @@ trait SWH_Admin_UI_Trait {
 					<strong>Login security · last 10 minutes</strong>
 					<p style="font-size:22px;margin:8px 0;"><?php echo esc_html( $security_10m['total'] ); ?> failed attempt(s)</p>
 					<?php if ( ! empty( $security_10m['usernames'] ) ) : ?>
-						<p class="description">Top username: <?php echo esc_html( $security_10m['usernames'][0]->username ); ?> (<?php echo esc_html( $security_10m['usernames'][0]->attempts ); ?>)</p>
+						<p class="description"><strong>Username patterns:</strong>
+						<?php foreach ( $security_10m['usernames'] as $item ) : ?>
+							<?php echo esc_html( $item->username . ' (' . $item->attempts . ')' ); ?>&nbsp;
+						<?php endforeach; ?>
+						</p>
 					<?php endif; ?>
 					<?php if ( ! empty( $security_10m['ips'] ) ) : ?>
-						<p class="description">Top IP pattern: <?php echo esc_html( $security_10m['ips'][0]->ip_address ); ?> (<?php echo esc_html( $security_10m['ips'][0]->attempts ); ?>)</p>
+						<p class="description"><strong>IP patterns:</strong>
+						<?php foreach ( $security_10m['ips'] as $item ) : ?>
+							<?php echo esc_html( $item->ip_address . ' (' . $item->attempts . ')' ); ?>&nbsp;
+						<?php endforeach; ?>
+						</p>
 					<?php endif; ?>
 				</div>
 				<div class="swh-settings" style="margin:0;max-width:none;">
@@ -238,6 +246,14 @@ trait SWH_Admin_UI_Trait {
 					<p>Total actions: <?php echo esc_html( $user_summary['total'] ); ?> · Content changes: <?php echo esc_html( $user_summary['content_changes'] ); ?> · Last login: <?php echo esc_html( $user_summary['last_login'] ? $user_summary['last_login'] : 'N/A' ); ?></p>
 					<?php if ( ! empty( $user_summary['last_action'] ) ) : ?>
 						<p class="description">Last action: <?php echo esc_html( $user_summary['last_action']->action_label ); ?> at <?php echo esc_html( $user_summary['last_action']->event_time ); ?></p>
+					<?php endif; ?>
+					<?php if ( ! empty( $user_summary['recent_content'] ) ) : ?>
+						<p><strong>Recent content changes</strong></p>
+						<ul style="margin-left:18px;list-style:disc;">
+							<?php foreach ( $user_summary['recent_content'] as $item ) : ?>
+								<li><?php echo esc_html( $item->event_time . ' — ' . $item->action_label . ' — ' . $item->object_title ); ?></li>
+							<?php endforeach; ?>
+						</ul>
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>
