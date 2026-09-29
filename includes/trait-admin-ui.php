@@ -70,6 +70,9 @@ trait SWH_Admin_UI_Trait {
 			$today
 		);
 		$admin_actions = $this->dashboard_count_since( array( 'admin_click' ), $today );
+		$plugin_changes = $this->dashboard_count_since( array( 'plugin_activated', 'plugin_deactivated' ), $today );
+		$user_changes = $this->dashboard_count_since( array( 'user_created', 'user_updated', 'user_deleted', 'user_role_changed' ), $today );
+		$security_10m = $this->security_summary( 10 );
 
 		$rows = $wpdb->get_results( "SELECT * FROM {$table} ORDER BY id DESC LIMIT 8" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
@@ -108,6 +111,22 @@ trait SWH_Admin_UI_Trait {
 					</li>
 				<?php endforeach; ?>
 			</ul>
+		<?php endif; ?>
+
+		<?php if ( $failed_logins > 0 || $plugin_changes > 0 || $user_changes > 0 ) : ?>
+			<div style="margin:12px 0;padding:10px 12px;border-left:4px solid #dba617;background:#fff8e5;">
+				<strong>Important activity today</strong><br>
+				<?php if ( $failed_logins > 0 ) : ?><span><?php echo esc_html( $failed_logins ); ?> failed login(s)</span><?php endif; ?>
+				<?php if ( $plugin_changes > 0 ) : ?><span> · <?php echo esc_html( $plugin_changes ); ?> plugin change(s)</span><?php endif; ?>
+				<?php if ( $user_changes > 0 ) : ?><span> · <?php echo esc_html( $user_changes ); ?> user change(s)</span><?php endif; ?>
+			</div>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $security_10m['total'] ) ) : ?>
+			<div style="margin:12px 0;padding:10px 12px;border-left:4px solid #d63638;background:#fcf0f1;">
+				<strong>Login security:</strong>
+				<?php echo esc_html( $security_10m['total'] ); ?> failed login attempt(s) in the last 10 minutes.
+			</div>
 		<?php endif; ?>
 
 		<div class="swh-dash-footer">
@@ -175,11 +194,53 @@ trait SWH_Admin_UI_Trait {
 		$retention_days     = absint( get_option( 'swh_retention_days', 180 ) );
 		$track_admin_clicks = (int) get_option( 'swh_track_admin_clicks', 1 );
 		$ip_mode            = get_option( 'swh_ip_mode', 'masked' );
+		$excluded_users     = array_map( 'absint', (array) get_option( 'swh_excluded_users', array() ) );
+		$excluded_roles     = array_map( 'sanitize_key', (array) get_option( 'swh_excluded_roles', array() ) );
+		$excluded_events    = array_map( 'sanitize_key', (array) get_option( 'swh_excluded_events', array() ) );
+		$all_users          = get_users( array( 'fields' => array( 'ID', 'user_login' ), 'orderby' => 'user_login' ) );
+		$all_roles          = wp_roles()->roles;
+		$security_10m       = $this->security_summary( 10 );
+		$health             = $this->database_health();
+		$user_summary       = ! empty( $filters['username'] ) ? $this->user_activity_summary( $filters['username'] ) : array();
 
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html__( 'Simple WP History', 'simple-wp-history' ); ?></h1>
 			<p><?php echo esc_html__( 'A lightweight audit trail of meaningful WordPress activity, with privacy-focused logging.', 'simple-wp-history' ); ?></p>
+
+			<div class="nav-tab-wrapper" style="margin-bottom:14px;">
+				<a class="nav-tab <?php echo empty( $filters['important'] ) ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=simple-wp-history' ) ); ?>">All Events</a>
+				<a class="nav-tab <?php echo ! empty( $filters['important'] ) ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=simple-wp-history&important=1' ) ); ?>">Important Events</a>
+			</div>
+
+			<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:14px 0;">
+				<div class="swh-settings" style="margin:0;max-width:none;">
+					<strong>Login security · last 10 minutes</strong>
+					<p style="font-size:22px;margin:8px 0;"><?php echo esc_html( $security_10m['total'] ); ?> failed attempt(s)</p>
+					<?php if ( ! empty( $security_10m['usernames'] ) ) : ?>
+						<p class="description">Top username: <?php echo esc_html( $security_10m['usernames'][0]->username ); ?> (<?php echo esc_html( $security_10m['usernames'][0]->attempts ); ?>)</p>
+					<?php endif; ?>
+					<?php if ( ! empty( $security_10m['ips'] ) ) : ?>
+						<p class="description">Top IP pattern: <?php echo esc_html( $security_10m['ips'][0]->ip_address ); ?> (<?php echo esc_html( $security_10m['ips'][0]->attempts ); ?>)</p>
+					<?php endif; ?>
+				</div>
+				<div class="swh-settings" style="margin:0;max-width:none;">
+					<strong>Database health</strong>
+					<p style="font-size:22px;margin:8px 0;"><?php echo esc_html( number_format_i18n( isset( $health['total_rows'] ) ? $health['total_rows'] : 0 ) ); ?> rows</p>
+					<p class="description">Size: <?php echo esc_html( size_format( isset( $health['bytes'] ) ? $health['bytes'] : 0 ) ); ?> · Oldest: <?php echo esc_html( ! empty( $health['oldest'] ) ? $health['oldest'] : 'N/A' ); ?></p>
+					<p class="description">Retention: <?php echo esc_html( ! empty( $health['retention'] ) ? $health['retention'] . ' days' : 'Keep forever' ); ?></p>
+				</div>
+			</div>
+
+			<?php if ( ! empty( $user_summary ) ) : ?>
+				<div class="swh-settings" style="max-width:none;">
+					<strong>User activity summary: <?php echo esc_html( $filters['username'] ); ?></strong>
+					<p>Total actions: <?php echo esc_html( $user_summary['total'] ); ?> · Content changes: <?php echo esc_html( $user_summary['content_changes'] ); ?> · Last login: <?php echo esc_html( $user_summary['last_login'] ? $user_summary['last_login'] : 'N/A' ); ?></p>
+					<?php if ( ! empty( $user_summary['last_action'] ) ) : ?>
+						<p class="description">Last action: <?php echo esc_html( $user_summary['last_action']->action_label ); ?> at <?php echo esc_html( $user_summary['last_action']->event_time ); ?></p>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
 
 			<style>
 				.swh-settings{background:#fff;border:1px solid #dcdcde;padding:16px;margin:16px 0;max-width:980px}
@@ -201,6 +262,8 @@ trait SWH_Admin_UI_Trait {
 				<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'History cleared.', 'simple-wp-history' ); ?></p></div>
 			<?php elseif ( isset( $_GET['swh_notice'] ) && 'settings_saved' === sanitize_key( wp_unslash( $_GET['swh_notice'] ) ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Settings saved.', 'simple-wp-history' ); ?></p></div>
+			<?php elseif ( isset( $_GET['swh_notice'] ) && 'cleanup_done' === sanitize_key( wp_unslash( $_GET['swh_notice'] ) ) ) : ?>
+				<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Old history logs deleted.', 'simple-wp-history' ); ?></p></div>
 			<?php endif; ?>
 
 			<div class="swh-settings">
@@ -240,12 +303,41 @@ trait SWH_Admin_UI_Trait {
 						Click tracking stores safe metadata such as button/link labels and admin screen paths only. Typed field values, passwords, cookies, nonces and authentication tokens are not stored.
 					</p>
 
+					<hr>
+					<h3>Log exclusions</h3>
+					<p class="description">Excluded users, roles and event types will not be written to the history table from this point onward.</p>
+					<p>
+						<label><strong>Exclude users</strong></label><br>
+						<select name="swh_excluded_users[]" multiple size="5" style="min-width:320px;">
+							<?php foreach ( $all_users as $u ) : ?>
+								<option value="<?php echo esc_attr( $u->ID ); ?>" <?php selected( in_array( (int) $u->ID, $excluded_users, true ) ); ?>><?php echo esc_html( $u->user_login ); ?></option>
+							<?php endforeach; ?>
+						</select>
+					</p>
+					<p>
+						<label><strong>Exclude roles</strong></label><br>
+						<select name="swh_excluded_roles[]" multiple size="5" style="min-width:320px;">
+							<?php foreach ( $all_roles as $role_key => $role ) : ?>
+								<option value="<?php echo esc_attr( $role_key ); ?>" <?php selected( in_array( $role_key, $excluded_roles, true ) ); ?>><?php echo esc_html( $role['name'] ); ?></option>
+							<?php endforeach; ?>
+						</select>
+					</p>
+					<p>
+						<label><strong>Exclude event types</strong></label><br>
+						<select name="swh_excluded_events[]" multiple size="7" style="min-width:320px;">
+							<?php foreach ( $this->all_known_action_keys() as $event_key ) : ?>
+								<option value="<?php echo esc_attr( $event_key ); ?>" <?php selected( in_array( $event_key, $excluded_events, true ) ); ?>><?php echo esc_html( $event_key ); ?></option>
+							<?php endforeach; ?>
+						</select>
+					</p>
+
 					<p><button class="button button-primary">Save Settings</button></p>
 				</form>
 			</div>
 
 			<form method="get" style="background:#fff;border:1px solid #dcdcde;padding:14px;margin:16px 0;">
 				<input type="hidden" name="page" value="simple-wp-history">
+				<?php if ( ! empty( $filters['important'] ) ) : ?><input type="hidden" name="important" value="1"><?php endif; ?>
 				<div class="swh-filter-grid">
 					<div>
 						<label for="swh_search">Search</label>
@@ -295,6 +387,17 @@ trait SWH_Admin_UI_Trait {
 				<div style="display:flex;gap:8px;flex-wrap:wrap;">
 					<button type="button" class="button" id="swh-toggle-ip" aria-pressed="false">Show IP</button>
 					<form method="get" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+						<input type="hidden" name="action" value="swh_export_json">
+						<?php wp_nonce_field( 'swh_export_json' ); ?>
+						<?php foreach ( $filters as $key => $value ) : ?>
+							<?php if ( '' !== $value ) : ?>
+								<input type="hidden" name="<?php echo esc_attr( 'search' === $key ? 's' : $key ); ?>" value="<?php echo esc_attr( $value ); ?>">
+							<?php endif; ?>
+						<?php endforeach; ?>
+						<button class="button">Export JSON</button>
+					</form>
+
+					<form method="get" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 						<input type="hidden" name="action" value="swh_export_csv">
 						<?php wp_nonce_field( 'swh_export_csv' ); ?>
 						<?php foreach ( $filters as $key => $value ) : ?>
@@ -303,6 +406,17 @@ trait SWH_Admin_UI_Trait {
 							<?php endif; ?>
 						<?php endforeach; ?>
 						<button class="button">Export CSV</button>
+					</form>
+
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm('Delete logs older than the selected age?');" style="display:flex;gap:6px;">
+						<input type="hidden" name="action" value="swh_cleanup_logs">
+						<?php wp_nonce_field( 'swh_cleanup_logs' ); ?>
+						<select name="days">
+							<option value="30">Older than 30 days</option>
+							<option value="90">Older than 90 days</option>
+							<option value="180">Older than 180 days</option>
+						</select>
+						<button class="button">Delete Old Logs</button>
 					</form>
 
 					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm('Clear all history logs? This cannot be undone.');">
