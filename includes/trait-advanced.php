@@ -63,7 +63,7 @@ trait SWH_Advanced_Trait {
 		}
 
 		$table = $this->table_name();
-		$since = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp', true ) - ( absint( $minutes ) * MINUTE_IN_SECONDS ) );
+		$since = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( absint( $minutes ) * MINUTE_IN_SECONDS ) );
 
 		$total = (int) $wpdb->get_var(
 			$wpdb->prepare(
@@ -181,7 +181,7 @@ trait SWH_Advanced_Trait {
 
 		global $wpdb;
 		$table  = $this->table_name();
-		$cutoff = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp', true ) - ( $days * DAY_IN_SECONDS ) );
+		$cutoff = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( $days * DAY_IN_SECONDS ) );
 
 		$wpdb->query(
 			$wpdb->prepare( "DELETE FROM {$table} WHERE event_time < %s", $cutoff )
