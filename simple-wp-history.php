@@ -3,7 +3,7 @@
  * Plugin Name: Simple WP History
  * Plugin URI: https://khairulazhar.com/my-plugins-and-tools/
  * Description: Lightweight WordPress activity history and audit log with dashboard summary, filters, CSV export, retention controls, safe admin click tracking, and security hardening.
- * Version: 1.0.1
+ * Version: 1.1
  * Requires at least: 5.8
  * Tested up to: 6.1.1
  * Requires PHP: 7.4
@@ -20,19 +20,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/includes/trait-core.php';
 require_once __DIR__ . '/includes/trait-events.php';
 require_once __DIR__ . '/includes/trait-tracker-updater.php';
+require_once __DIR__ . '/includes/trait-advanced.php';
 require_once __DIR__ . '/includes/trait-admin-data.php';
 require_once __DIR__ . '/includes/trait-admin-ui.php';
 
 final class SWH_Simple_WP_History {
 
-	const VERSION    = '1.0.1';
+	const VERSION    = '1.1';
 	const DB_VERSION = '1.0';
 
 	private static $instance = null;
 	private $pre_update_posts = array();
 	private $table_exists_cache = null;
 
-	use SWH_Core_Trait, SWH_Events_Trait, SWH_Tracker_Updater_Trait, SWH_Admin_Data_Trait, SWH_Admin_UI_Trait;
+	use SWH_Core_Trait, SWH_Events_Trait, SWH_Tracker_Updater_Trait, SWH_Advanced_Trait, SWH_Admin_Data_Trait, SWH_Admin_UI_Trait;
 
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -56,6 +57,8 @@ final class SWH_Simple_WP_History {
 		add_action( 'admin_post_swh_clear_logs', array( $this, 'handle_clear_logs' ) );
 		add_action( 'admin_post_swh_save_settings', array( $this, 'handle_save_settings' ) );
 		add_action( 'admin_post_swh_export_csv', array( $this, 'handle_export_csv' ) );
+		add_action( 'admin_post_swh_export_json', array( $this, 'handle_export_json' ) );
+		add_action( 'admin_post_swh_cleanup_logs', array( $this, 'handle_cleanup_logs' ) );
 		add_action( 'wp_ajax_swh_log_admin_click', array( $this, 'ajax_log_admin_click' ) );
 
 		add_action( 'wp_login', array( $this, 'log_login' ), 10, 2 );
@@ -88,6 +91,9 @@ final class SWH_Simple_WP_History {
 		add_action( 'woocommerce_new_order', array( $this, 'log_wc_new_order' ) );
 		add_action( 'woocommerce_order_status_changed', array( $this, 'log_wc_order_status_changed' ), 10, 4 );
 		add_action( 'woocommerce_update_product', array( $this, 'log_wc_product_updated' ) );
+		add_action( 'transition_post_status', array( $this, 'log_wc_product_status' ), 10, 3 );
+		add_action( 'save_post_shop_coupon', array( $this, 'log_wc_coupon_save' ), 10, 3 );
+		add_action( 'before_delete_post', array( $this, 'log_wc_coupon_deleted' ), 20 );
 	}
 }
 
