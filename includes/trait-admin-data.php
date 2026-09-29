@@ -84,7 +84,7 @@ trait SWH_Admin_Data_Trait {
 
 		global $wpdb;
 		$table  = $this->table_name();
-		$cutoff = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp', true ) - ( $retention * DAY_IN_SECONDS ) );
+		$cutoff = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( $retention * DAY_IN_SECONDS ) );
 
 		$wpdb->query(
 			$wpdb->prepare(
