@@ -180,6 +180,10 @@ trait SWH_Core_Trait {
 		$username = ( null === $args['username'] ) ? $current['username'] : $this->limit_text( $args['username'], 60 );
 		$ip       = ( null === $args['ip_address'] ) ? $this->current_ip() : $this->limit_text( $args['ip_address'], 45 );
 
+		if ( method_exists( $this, 'should_exclude_event' ) && $this->should_exclude_event( sanitize_key( $action_key ), $user_id ) ) {
+			return;
+		}
+
 		$details = $this->sanitize_details( $args['details'] );
 		$json    = ! empty( $details ) ? wp_json_encode( $details, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) : '';
 
@@ -217,6 +221,7 @@ trait SWH_Core_Trait {
 			'user_created'                => 'Users',
 			'user_updated'                => 'Users',
 			'user_deleted'                => 'Security',
+			'user_role_changed'            => 'Security',
 			'plugin_activated'            => 'System',
 			'plugin_deactivated'          => 'System',
 			'theme_switched'              => 'System',
@@ -228,6 +233,12 @@ trait SWH_Core_Trait {
 			'woocommerce_order_created'   => 'WooCommerce',
 			'woocommerce_order_status'    => 'WooCommerce',
 			'woocommerce_product_updated' => 'WooCommerce',
+			'woocommerce_product_published' => 'WooCommerce',
+			'woocommerce_product_unpublished' => 'WooCommerce',
+			'woocommerce_coupon_created'   => 'WooCommerce',
+			'woocommerce_coupon_updated'   => 'WooCommerce',
+			'woocommerce_coupon_deleted'   => 'WooCommerce',
+			'woocommerce_setting_updated'  => 'WooCommerce',
 		);
 
 		return isset( $map[ $action_key ] ) ? $map[ $action_key ] : 'Other';
@@ -237,14 +248,14 @@ trait SWH_Core_Trait {
 		$category = sanitize_text_field( $category );
 		$all = array(
 			'Authentication' => array( 'login_success', 'logout' ),
-			'Security'       => array( 'login_failed', 'user_deleted' ),
+			'Security'       => array( 'login_failed', 'user_deleted', 'user_role_changed' ),
 			'Content'        => array( 'content_created', 'content_updated', 'content_trashed', 'content_restored', 'content_deleted' ),
 			'Media'          => array( 'media_added', 'media_updated', 'media_deleted' ),
 			'Users'          => array( 'user_created', 'user_updated' ),
 			'System'         => array( 'plugin_activated', 'plugin_deactivated', 'theme_switched', 'software_updated' ),
 			'Settings'       => array( 'option_updated', 'option_added', 'option_deleted' ),
 			'Admin UI'       => array( 'admin_click' ),
-			'WooCommerce'    => array( 'woocommerce_order_created', 'woocommerce_order_status', 'woocommerce_product_updated' ),
+			'WooCommerce'    => array( 'woocommerce_order_created', 'woocommerce_order_status', 'woocommerce_product_updated', 'woocommerce_product_published', 'woocommerce_product_unpublished', 'woocommerce_coupon_created', 'woocommerce_coupon_updated', 'woocommerce_coupon_deleted', 'woocommerce_setting_updated' ),
 		);
 
 		return isset( $all[ $category ] ) ? $all[ $category ] : array();
