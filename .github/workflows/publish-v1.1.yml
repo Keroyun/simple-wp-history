@@ -1,0 +1,70 @@
+name: Publish Simple WP History 1.1
+
+on:
+  push:
+    paths:
+      - 'release-v1.1.trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event.head_commit.message == 'Publish Simple WP History 1.1'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: PHP syntax check
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Build plugin ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build
+          mkdir -p build/simple-wp-history
+          rsync -av \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='build' \
+            --exclude='release-v1.0.trigger' \
+            --exclude='release-v1.0.1.trigger' \
+            --exclude='release-v1.1.trigger' \
+            --exclude='*.zip' \
+            ./ build/simple-wp-history/
+          cd build
+          zip -r ../simple-wp-history-1.1.zip simple-wp-history
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create v1.1 simple-wp-history-1.1.zip \
+            --target main \
+            --title "Simple WP History 1.1" \
+            --notes "Feature update focused on audit visibility, security awareness, privacy controls, and maintenance.
+
+          Added:
+          - Login security summary with recent failed-login username/IP patterns
+          - Important Events view
+          - Per-user activity summaries and recent content changes
+          - Richer content metadata change tracking
+          - User, role, and event exclusions
+          - Dashboard alerts
+          - Database health information
+          - Manual cleanup tools
+          - JSON export
+          - Expanded WooCommerce audit events
+
+          Improved:
+          - GitHub updater version parsing
+          - WordPress force-check refresh handling
+          - Site-timezone-aware cleanup/security windows
+
+          No full content, passwords, form values, cookies, nonces, API secrets, or customer PII are intentionally captured."
